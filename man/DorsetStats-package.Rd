@@ -27,6 +27,7 @@ Maintainer: Wei Liang Yap <yapweiliang@yahoo.co.uk>
 }
 \usage{
 getDorsetGPDataset( GP_SYOA_DataFile = "h:/DATASETS/HSCIC/GP_SYOA_20150331.csv",
+                    localities_DataFile = "h:/DATASETS/Dorset Statistics Derived/CCG 2014/Dorset_GP_Names_and_Localities_from_CCG_PivotTable.csv",
                     epraccur_DataFile = "h:/DATASETS/HSCIC/epraccur_20150318.csv",
                     CodePoint = readRDS("H:/DATASETS/OS/CodePoint/CodePoint 2015.1.0 compiled.rds" ) )
 }
@@ -34,8 +35,11 @@ getDorsetGPDataset( GP_SYOA_DataFile = "h:/DATASETS/HSCIC/GP_SYOA_20150331.csv",
   \item{GP_SYOA_DataFile}{
 full path to the \file{GP_SYOA.csv} file, download from \url{http://www.hscic.gov.uk}
   }
+  \item{localities_DataFile}{
+full path to the file obtained from CCG, or scrape from \url{http://www.dorsetccg.nhs.uk/aboutus/localities.htm}
+  }
   \item{epraccur_DataFile}{
-full path to the \file{epraccur.csv} file, download and unzip from \url{http://www.hscic.gov.uk}
+full path to the \file{epraccur.csv} file, download and unzip from \url{http://systems.hscic.gov.uk/data/ods/datadownloads/gppractice/index_html}
   }
   \item{CodePoint}{
 specify the Code Point dataset, or load it from a saved \file{codepoint.rds} file

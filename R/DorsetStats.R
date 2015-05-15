@@ -9,6 +9,11 @@ GP_SYOA_headers_classes <- c("character",
                              "factor",
                              rep("integer", (200 - 5) ) )
 
+
+# localities header definition --------------------------------------------
+
+localities_headers_classes <- c("factor","character","character")
+
 # epraccur header definitions ---------------------------------------------
 
 epraccur_headers_full <- c( "Organisation Code",
@@ -99,6 +104,7 @@ epraccur_headers_classes <- c( "character",  # "PRACTICE_CODE",
 # function: getDorsetGPDataset --------------------------------------------
 
 getDorsetGPDataset <- function( GP_SYOA_DataFile = "h:/DATASETS/HSCIC/GP_SYOA_20150331.csv",
+                                localities_DataFile = "h:/DATASETS/Dorset Statistics Derived/CCG 2014/Dorset_GP_Names_and_Localities_from_CCG_PivotTable.csv",
                                 epraccur_DataFile = "h:/DATASETS/HSCIC/epraccur_20150318.csv",
                                 CodePoint = readRDS("H:/DATASETS/OS/CodePoint/CodePoint 2015.1.0 compiled.rds") ) {
 
@@ -108,11 +114,14 @@ getDorsetGPDataset <- function( GP_SYOA_DataFile = "h:/DATASETS/HSCIC/GP_SYOA_20
   GP_SYOA <- read.csv(GP_SYOA_DataFile, colClasses = GP_SYOA_headers_classes)
   message(sprintf("Loading epraccur file: %s", epraccur_DataFile))
   epraccur <- read.csv(epraccur_DataFile, header = FALSE, col.names = epraccur_headers_short, colClasses = epraccur_headers_classes)
+  message(sprintf("Loading NHS Dorset localities file: %s", localities_DataFile))
+  DorsetLocalities <- read.csv(localities_DataFile, colClasses = localities_headers_classes)
 
   # process data
 
-  GPDataset <- merge(epraccur, GP_SYOA )
+  GPDataset <- merge(epraccur, GP_SYOA)
   DorsetGPDataset <- subset(GPDataset,PARENT_ORGANISATION_CODE=="11J")  # 11J == NHS Dorset CCG
+  DorsetGPDataset <- merge(DorsetLocalities, DorsetGPDataset, by.x = "GP_Practice_Code", by.y = "PRACTICE_CODE")
 
   # work out preferred age bands, and re-define postcode
 
