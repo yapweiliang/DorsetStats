@@ -1,0 +1,10 @@
+Package: DorsetStats
+Type: Package
+Title: process Dorset statistics in a manner that I want
+Version: 1.0
+Date: 2015-05-15
+Author: Wei Liang Yap
+Maintainer: Wei Liang Yap <yapweiliang@yahoo.co.uk>
+Description: More about what it does (maybe more than one line)
+License: GPL(>=2)
+Depends: stringr
