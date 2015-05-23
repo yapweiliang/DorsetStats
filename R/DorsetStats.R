@@ -1,8 +1,17 @@
 # DorsetStats.R
 
+
+# default source data files -----------------------------------------------
+
+.default_GP_SYOA_DataFile    <- "h:/DATASETS/HSCIC/GP_SYOA_20150331.csv"
+.default_localities_DataFile <- "h:/DATASETS/Dorset Statistics Derived/CCG 2014/Dorset_GP_Names_and_Localities_from_CCG_PivotTable.csv"
+.default_epraccur_DataFile   <- "h:/DATASETS/HSCIC/epraccur_20150318.csv"
+
+.default_CodePoint_RDSFile   <- "H:/DATASETS/OS/CodePoint/CodePoint 2015.2.0 compiled.rds"
+
 # GP_SYOA header definitions ----------------------------------------------
 
-GP_SYOA_headers_classes <- c("character",
+.GP_SYOA_headers_classes <- c("character",
                              "character",
                              "factor",
                              "factor",
@@ -12,11 +21,11 @@ GP_SYOA_headers_classes <- c("character",
 
 # localities header definition --------------------------------------------
 
-localities_headers_classes <- c("factor","character","character")
+.localities_headers_classes <- c("factor","character","character")
 
 # epraccur header definitions ---------------------------------------------
 
-epraccur_headers_full <- c( "Organisation Code",
+.epraccur_headers_full <- c( "Organisation Code",
                             "Name",
                             "National Grouping",
                             "High Level Health Geography",
@@ -44,7 +53,7 @@ epraccur_headers_full <- c( "Organisation Code",
                             "Prescribing Setting",
                             "Null" )
 
-epraccur_headers_short <- c( "PRACTICE_CODE", # "Organisation Code" re-spell headers to match GP_SYOA headers where applicable
+.epraccur_headers_short <- c( "PRACTICE_CODE", # "Organisation Code" re-spell headers to match GP_SYOA headers where applicable
                              "NAME",
                              "NHSE_REGION",    # "National Grouping"
                              "NHSE_AREA_TEAM", # "High Level Health Grouping"
@@ -72,7 +81,7 @@ epraccur_headers_short <- c( "PRACTICE_CODE", # "Organisation Code" re-spell hea
                              "PrescribingSetting",
                              "Null" )
 
-epraccur_headers_classes <- c( "character",  # "PRACTICE_CODE",
+.epraccur_headers_classes <- c( "character",  # "PRACTICE_CODE",
                                "character",  # "NAME",
                                "factor",  # "NHSE_REGION",
                                "factor",  # "NHSE_AREA_TEAM",
@@ -103,24 +112,27 @@ epraccur_headers_classes <- c( "character",  # "PRACTICE_CODE",
 
 # function: getDorsetGPDataset --------------------------------------------
 
-getDorsetGPDataset <- function( GP_SYOA_DataFile = "h:/DATASETS/HSCIC/GP_SYOA_20150331.csv",
-                                localities_DataFile = "h:/DATASETS/Dorset Statistics Derived/CCG 2014/Dorset_GP_Names_and_Localities_from_CCG_PivotTable.csv",
-                                epraccur_DataFile = "h:/DATASETS/HSCIC/epraccur_20150318.csv",
-                                CodePoint = readRDS("H:/DATASETS/OS/CodePoint/CodePoint 2015.1.0 compiled.rds") ) {
+getDorsetGPDataset <- function( GP_SYOA_DataFile = .default_GP_SYOA_DataFile,
+                                localities_DataFile = .default_localities_DataFile,
+                                epraccur_DataFile = .default_epraccur_DataFile,
+                                CodePoint = readRDS(.default_CodePoint_RDSFile) ) {
 
   # load csv data
 
   message(sprintf("Loading GP_SYOA file: %s", GP_SYOA_DataFile))
-  GP_SYOA <- read.csv(GP_SYOA_DataFile, colClasses = GP_SYOA_headers_classes)
+  GP_SYOA <- read.csv(GP_SYOA_DataFile, colClasses = .GP_SYOA_headers_classes)
+
   message(sprintf("Loading epraccur file: %s", epraccur_DataFile))
-  epraccur <- read.csv(epraccur_DataFile, header = FALSE, col.names = epraccur_headers_short, colClasses = epraccur_headers_classes)
+  epraccur <- read.csv(epraccur_DataFile, header = FALSE, col.names = .epraccur_headers_short, colClasses = .epraccur_headers_classes)
+
   message(sprintf("Loading NHS Dorset localities file: %s", localities_DataFile))
-  DorsetLocalities <- read.csv(localities_DataFile, colClasses = localities_headers_classes)
+  DorsetLocalities <- read.csv(localities_DataFile, colClasses = .localities_headers_classes)
 
   # process data
 
   GPDataset <- merge(epraccur, GP_SYOA)
   DorsetGPDataset <- subset(GPDataset,PARENT_ORGANISATION_CODE=="11J")  # 11J == NHS Dorset CCG
+
   DorsetGPDataset <- merge(DorsetLocalities, DorsetGPDataset, by.x = "GP_Practice_Code", by.y = "PRACTICE_CODE")
 
   # work out preferred age bands, and re-define postcode
@@ -161,9 +173,19 @@ getDorsetGPDataset <- function( GP_SYOA_DataFile = "h:/DATASETS/HSCIC/GP_SYOA_20
   DorsetGPDataset <- DorsetGPDataset[ , -grep("MALE",names(DorsetGPDataset)) ]
   DorsetGPDataset <- DorsetGPDataset[ , -grep("_95.",names(DorsetGPDataset)) ]
 
-  # add Code Point coordinates
+  # before adding Code Point coordinates, tweak for missing coordinate in CPO
+  #   BH229HF is not on Code Point Open
+  #   however it is adjacent to BH229HB, so use same coordinates
   message("Loading/merging Code Point data")
-  DorsetGPDataset <- merge(DorsetGPDataset,CodePoint,by.x="POSTCODE",by.y="Postcode",all.x=TRUE) # add CodePoint coordinates
+
+  if (is.na(match("BH229HF", CodePoint$Postcode))) {
+    DorsetGPDataset[which(DorsetGPDataset$POSTCODE == "BH229HF"), ]$POSTCODE <- "BH229HB"
+    warning( "No coordinates for BH229HF, so substituting BH229HB instead")
+  }
+
+  # add Code Point coordinates
+
+  DorsetGPDataset <- merge(DorsetGPDataset,CodePoint,by.x="POSTCODE",by.y="Postcode",all.x=TRUE)
 
   .missing.codepoint.coordinates <- length(which(is.na(DorsetGPDataset$Eastings)))
   if( .missing.codepoint.coordinates > 0 ) {
