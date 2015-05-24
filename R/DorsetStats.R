@@ -148,10 +148,18 @@ getDorsetGPDataset <- function( GP_SYOA_DataFile = .default_GP_SYOA_DataFile,
     nM_05_16 <-   MALE_5   +   MALE_6   +   MALE_7_8 +   MALE_8_9 +   MALE_9_10 +   MALE_10_11 +   MALE_11_12 +   MALE_12_13 +   MALE_13_14 +   MALE_14_15 +   MALE_15_16 +   MALE_16_17
     nF_05_16 <- FEMALE_5_6 + FEMALE_6_7 + FEMALE_7_8 + FEMALE_8_9 + FEMALE_9_10 + FEMALE_10_11 + FEMALE_11_12 + FEMALE_12_13 + FEMALE_13_14 + FEMALE_14_15 + FEMALE_15_16 + FEMALE_16_17
     n_05_16 <- nM_05_16 + nF_05_16
+    # 0 - 15
+    nM_00_15 <- nM_00_04 + nM_05_16 -   MALE_16_17
+    nF_00_15 <- nF_00_04 + nF_05_16 - FEMALE_16_17
+    n_00_15 <- nM_00_15 + nF_00_15
     # 0 - 16
     nM_00_16 <- nM_00_04 + nM_05_16
     nF_00_16 <- nF_00_04 + nF_05_16
     n_00_16 <- nM_00_16 + nF_00_16
+    # 0 - 17
+    nM_00_17 <- nM_00_16 +   MALE_17_18
+    nF_00_17 <- nF_00_16 + FEMALE_17_18
+    n_00_17 <- nM_00_17 + nF_00_17
     # 0 - 18
     nM_00_18 <- nM_00_16 +   MALE_17_18 +   MALE_18_19
     nF_00_18 <- nF_00_16 + FEMALE_17_18 + FEMALE_18_19
@@ -164,6 +172,10 @@ getDorsetGPDataset <- function( GP_SYOA_DataFile = .default_GP_SYOA_DataFile,
     nM_05_07 <-   MALE_5   +   MALE_6   +   MALE_7_8
     nF_05_07 <- FEMALE_5_6 + FEMALE_6_7 + FEMALE_7_8
     n_05_07 <- nM_05_07 + nF_05_07
+    # 16 - 17
+    nM_16_17 <-   MALE_16_17 +   MALE_17_18
+    nF_16_17 <- FEMALE_16_17 + FEMALE_17_18
+    n_16_17 <- nM_16_17 + nF_16_17
 
     POSTCODE<-paste0(str_sub(POSTCODE,1,4),str_sub(POSTCODE,-3,-1)) # make it the same format as CodePoint database
   })
