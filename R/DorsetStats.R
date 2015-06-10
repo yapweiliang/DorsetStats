@@ -109,13 +109,45 @@
                                "factor",  # "PrescribingSetting",
                                "NULL" )
 
+# constants
 
-# function: getDorsetGPDataset --------------------------------------------
+CCGcode.Dorset <- '11J'
+CCGcode.BathAndNorthEastSomerset <- '11E'
+CCGcode.NorthSomerset <- '11T'
+CCGcode.Somerset <- '11X'
+CCGcode.Bristol <- '11H'
+CCGcode.Wiltshire <- '99N'
+CCGcode.SouthGloucestershire <- '12A'
+CCGcode.Swindon <- '12D'
+CCGcode.NorthEastWestDevon <- '99P'
+CCGcode.SouthDevonAndTorbay <- '99Q'
+CCGcode.WestHampshire <- '11A'
 
-getDorsetGPDataset <- function( GP_SYOA_DataFile = .default_GP_SYOA_DataFile,
-                                localities_DataFile = .default_localities_DataFile,
-                                epraccur_DataFile = .default_epraccur_DataFile,
-                                CodePoint = readRDS(.default_CodePoint_RDSFile) ) {
+CCGcodes.DorsetsSurroundings <- c(
+  CCGcode.BathAndNorthEastSomerset,
+  CCGcode.NorthSomerset,
+  CCGcode.Somerset,
+  CCGcode.Bristol,
+  CCGcode.Wiltshire,
+  CCGcode.SouthGloucestershire,
+  CCGcode.Swindon,
+  CCGcode.NorthEastWestDevon,
+  CCGcode.SouthDevonAndTorbay,
+  CCGcode.WestHampshire
+)
+
+CCGcodes.DorsetAndSurroundings <- c(
+  CCGcode.Dorset,
+  CCGcodes.DorsetsSurroundings
+)
+
+# function: getGPDataset --------------------------------------------------
+
+getGPDataset <-
+  function(GP_SYOA_DataFile = .default_GP_SYOA_DataFile,
+           CCG_List = CCGcodes.DorsetsSurroundings,
+           epraccur_DataFile = .default_epraccur_DataFile,
+           CodePoint = readRDS(.default_CodePoint_RDSFile)) {
 
   # load csv data
 
@@ -125,19 +157,14 @@ getDorsetGPDataset <- function( GP_SYOA_DataFile = .default_GP_SYOA_DataFile,
   message(sprintf("Loading epraccur file: %s", epraccur_DataFile))
   epraccur <- read.csv(epraccur_DataFile, header = FALSE, col.names = .epraccur_headers_short, colClasses = .epraccur_headers_classes)
 
-  message(sprintf("Loading NHS Dorset localities file: %s", localities_DataFile))
-  DorsetLocalities <- read.csv(localities_DataFile, colClasses = .localities_headers_classes)
-
   # process data
 
   GPDataset <- merge(epraccur, GP_SYOA)
-  DorsetGPDataset <- subset(GPDataset,PARENT_ORGANISATION_CODE=="11J")  # 11J == NHS Dorset CCG
-
-  DorsetGPDataset <- merge(DorsetLocalities, DorsetGPDataset, by.x = "GP_Practice_Code", by.y = "PRACTICE_CODE")
+  GPDataset <- subset(GPDataset,PARENT_ORGANISATION_CODE %in% CCG_List)
 
   # work out preferred age bands, and re-define postcode
 
-  DorsetGPDataset<- within(DorsetGPDataset,{
+  GPDataset<- within(GPDataset,{
     # MALE_4, MALE_5, MALE_6 are the odd ones out
 
     # 0 - 4
@@ -182,27 +209,60 @@ getDorsetGPDataset <- function( GP_SYOA_DataFile = .default_GP_SYOA_DataFile,
 
   # trim off unwanted column names (remove MALE_ and FEMALE_ )
 
-  DorsetGPDataset <- DorsetGPDataset[ , -grep("MALE",names(DorsetGPDataset)) ]
-  DorsetGPDataset <- DorsetGPDataset[ , -grep("_95.",names(DorsetGPDataset)) ]
+  GPDataset <- GPDataset[ , -grep("MALE",names(GPDataset)) ]
+  GPDataset <- GPDataset[ , -grep("_95.",names(GPDataset)) ]
 
-  # before adding Code Point coordinates, tweak for missing coordinate in CPO
-  #   BH229HF is not on Code Point Open
-  #   however it is adjacent to BH229HB, so use same coordinates
-  message("Loading/merging Code Point data")
+  # exception handling
+  #   before adding Code Point coordinates, tweak for missing coordinate in CPO
+  #     BH229HF is not on Code Point Open
+  #     however it is adjacent to BH229HB, so use same coordinates
 
   if (is.na(match("BH229HF", CodePoint$Postcode))) {
-    DorsetGPDataset[which(DorsetGPDataset$POSTCODE == "BH229HF"), ]$POSTCODE <- "BH229HB"
-    warning( "No coordinates for BH229HF, so substituting BH229HB instead")
+    z <- which(GPDataset$POSTCODE == "BH229HF")
+    if (length(z) > 0) {
+      GPDataset[z, ]$POSTCODE <- "BH229HB"
+      warning( "No coordinates for BH229HF, so substituting BH229HB instead")
+    }
   }
+
+  message("Loading/Merging Code Point data")
 
   # add Code Point coordinates
 
-  DorsetGPDataset <- merge(DorsetGPDataset,CodePoint,by.x="POSTCODE",by.y="Postcode",all.x=TRUE)
+  GPDataset <- merge(GPDataset,CodePoint,by.x="POSTCODE",by.y="Postcode",all.x=TRUE)
 
-  .missing.codepoint.coordinates <- length(which(is.na(DorsetGPDataset$Eastings)))
+  .missing.codepoint.coordinates <- length(which(is.na(GPDataset$Eastings)))
   if( .missing.codepoint.coordinates > 0 ) {
     warning( sprintf("There are %d row(s) with missing Code Point coordinates.",.missing.codepoint.coordinates))
   }
+
+  # refactor everything
+  cat <- sapply(GPDataset, is.factor)
+  GPDataset[cat] <- lapply(GPDataset[cat], factor)
+
+  return(GPDataset)
+}
+
+# function: getDorsetGPDataset --------------------------------------------
+
+getDorsetGPDataset <- function( GP_SYOA_DataFile = .default_GP_SYOA_DataFile,
+                                localities_DataFile = .default_localities_DataFile,
+                                epraccur_DataFile = .default_epraccur_DataFile,
+                                CodePoint = readRDS(.default_CodePoint_RDSFile) ) {
+
+  message(sprintf("Loading NHS Dorset localities file: %s", localities_DataFile))
+  DorsetLocalities <- read.csv(localities_DataFile, colClasses = .localities_headers_classes)
+
+  DorsetGPDataset <- getGPDataset(
+    GP_SYOA_DataFile = GP_SYOA_DataFile,
+    CCG_List = CCGcode.Dorset,
+    epraccur_DataFile = epraccur_DataFile,
+    CodePoint = CodePoint
+  )
+
+  message("Merging Dorset CCG localities")
+
+  DorsetGPDataset <- merge(DorsetLocalities, DorsetGPDataset, by.x = "GP_Practice_Code", by.y = "PRACTICE_CODE")
 
   # refactor everything
   cat <- sapply(DorsetGPDataset, is.factor)
@@ -210,3 +270,4 @@ getDorsetGPDataset <- function( GP_SYOA_DataFile = .default_GP_SYOA_DataFile,
 
   return(DorsetGPDataset)
 }
+
