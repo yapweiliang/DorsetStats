@@ -2,6 +2,7 @@
 \alias{DorsetStats-package}
 \alias{DorsetStats}
 \alias{getDorsetGPDataset}
+\alias{getGPDataset}
 \docType{package}
 \title{
 Stuff to get Dorset Statistics in a manner that I want
@@ -26,10 +27,15 @@ Maintainer: Wei Liang Yap <yapweiliang@yahoo.co.uk>
 \seealso{
 }
 \usage{
-getDorsetGPDataset( GP_SYOA_DataFile = "h:/DATASETS/HSCIC/GP_SYOA_20150331.csv",
-                    localities_DataFile = "h:/DATASETS/Dorset Statistics Derived/CCG 2014/Dorset_GP_Names_and_Localities_from_CCG_PivotTable.csv",
-                    epraccur_DataFile = "h:/DATASETS/HSCIC/epraccur_20150318.csv",
+getDorsetGPDataset( GP_SYOA_DataFile = "H:/DATASETS/HSCIC/GP_SYOA_20150331.csv",
+                    localities_DataFile = "H:/DATASETS/Dorset Statistics Derived/CCG 2014/Dorset_GP_Names_and_Localities_from_CCG_PivotTable.csv",
+                    epraccur_DataFile = "H:/DATASETS/HSCIC/epraccur_20150318.csv",
                     CodePoint = readRDS("H:/DATASETS/OS/CodePoint/CodePoint 2015.1.0 compiled.rds" ) )
+
+getGPDataset( GP_SYOA_DataFile = "H:/DATASETS/HSCIC/GP_SYOA_20150331.csv",
+              CCG_List = CCGcodes.DorsetsSurroundings,
+              epraccur_DataFile = "H:/DATASETS/HSCIC/epraccur_20150318.csv",
+              CodePoint = readRDS("H:/DATASETS/OS/CodePoint/CodePoint 2015.1.0 compiled.rds" ) )
 }
 \arguments{
   \item{GP_SYOA_DataFile}{
@@ -43,6 +49,9 @@ full path to the \file{epraccur.csv} file, download and unzip from \url{http://s
   }
   \item{CodePoint}{
 specify the Code Point dataset, or load it from a saved \file{codepoint.rds} file
+  }
+  \item{CCG_List}{
+character vector of CCG codes, e.g. \code{c("11J")}
   }
 }
 \examples{
