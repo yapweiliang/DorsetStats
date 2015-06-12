@@ -122,6 +122,7 @@ CCGcode.Swindon <- '12D'
 CCGcode.NorthEastWestDevon <- '99P'
 CCGcode.SouthDevonAndTorbay <- '99Q'
 CCGcode.WestHampshire <- '11A'
+CCGcode.Southampton <- '10X'
 
 CCGcodes.DorsetsSurroundings <- c(
   CCGcode.BathAndNorthEastSomerset,
@@ -133,7 +134,8 @@ CCGcodes.DorsetsSurroundings <- c(
   CCGcode.Swindon,
   CCGcode.NorthEastWestDevon,
   CCGcode.SouthDevonAndTorbay,
-  CCGcode.WestHampshire
+  CCGcode.WestHampshire,
+  CCGcode.Southampton
 )
 
 CCGcodes.DorsetAndSurroundings <- c(
