@@ -125,6 +125,8 @@ CCGcode.WestHampshire <- '11A'
 CCGcode.Southampton <- '10X'
 CCGcode.Portsmouth <- '10R'
 CCGcode.FarehamAndGosport <- '10K'
+CCGcode.Gloucestershire <- '11M'
+CCGcode.NorthHampshire <- '10J'
 
 CCGcodes.DorsetsSurroundings <- c(
   CCGcode.BathAndNorthEastSomerset,
