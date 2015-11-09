@@ -1,23 +1,25 @@
 # DorsetStats.R
 
+# sources -----------------------------------------------------------------
+
+# epraccur  http://systems.hscic.gov.uk/data/ods/datadownloads/gppractice/index_html
+# gp_syoa   http://www.hscic.gov.uk/article/2021/Website-Search?q=gp+list+size&go=Go&area=both
+# localities from CCG Pivot Table
 
 # default source data files -----------------------------------------------
 
-.default_GP_SYOA_DataFile    <- "h:/DATASETS/HSCIC/GP_SYOA_20150331.csv"
+.default_GP_SYOA_DataFile    <- "h:/DATASETS/HSCIC/GP_SYOA_20150930.csv"
 .default_localities_DataFile <- "h:/DATASETS/Dorset Statistics Derived/CCG 2014/Dorset_GP_Names_and_Localities_from_CCG_PivotTable.csv"
-.default_epraccur_DataFile   <- "h:/DATASETS/HSCIC/epraccur_20150318.csv"
+.default_epraccur_DataFile   <- "h:/DATASETS/HSCIC/epraccur_20150821.csv"
 
 .default_CodePoint_RDSFile   <- "H:/DATASETS/OS/CodePoint/CodePoint 2015.2.0 compiled.rds"
 
 # GP_SYOA header definitions ----------------------------------------------
 
-.GP_SYOA_headers_classes <- c("character",
-                             "character",
-                             "factor",
-                             "factor",
-                             "factor",
-                             rep("integer", (200 - 5) ) )
-
+.GP_SYOA_headers_classes <- c("character", # PRACTICE_CODE
+                              "character",  # POSTCODE
+                              rep("factor", 6), # 20150930 has different fields
+                              rep("integer", (200 - 5))) # SYOA
 
 # localities header definition --------------------------------------------
 
@@ -168,19 +170,19 @@ getGPDataset <-
   # process data
 
   GPDataset <- merge(epraccur, GP_SYOA)
-  GPDataset <- subset(GPDataset,PARENT_ORGANISATION_CODE %in% CCG_List)
+  GPDataset <- subset(GPDataset,CCG_CODE %in% CCG_List) # CCG_CODE was PARENT_ORGANISATION_CODE
 
   # work out preferred age bands, and re-define postcode
 
   GPDataset<- within(GPDataset,{
-    # MALE_4, MALE_5, MALE_6 are the odd ones out
+    # MALE_4, MALE_5, MALE_6 are the odd ones out, this seems to be corrected in the 20150930 gp syoa dataset
 
     # 0 - 4
-    nM_00_04 <-   MALE_0_1 +   MALE_1_2 +   MALE_2_3 +   MALE_3_4 +   MALE_4
+    nM_00_04 <-   MALE_0_1 +   MALE_1_2 +   MALE_2_3 +   MALE_3_4 +   MALE_4_5
     nF_00_04 <- FEMALE_0_1 + FEMALE_1_2 + FEMALE_2_3 + FEMALE_3_4 + FEMALE_4_5
     n_00_04 <- nM_00_04 + nF_00_04
     # 5 - 16
-    nM_05_16 <-   MALE_5   +   MALE_6   +   MALE_7_8 +   MALE_8_9 +   MALE_9_10 +   MALE_10_11 +   MALE_11_12 +   MALE_12_13 +   MALE_13_14 +   MALE_14_15 +   MALE_15_16 +   MALE_16_17
+    nM_05_16 <-   MALE_5_6 +   MALE_6_7 +   MALE_7_8 +   MALE_8_9 +   MALE_9_10 +   MALE_10_11 +   MALE_11_12 +   MALE_12_13 +   MALE_13_14 +   MALE_14_15 +   MALE_15_16 +   MALE_16_17
     nF_05_16 <- FEMALE_5_6 + FEMALE_6_7 + FEMALE_7_8 + FEMALE_8_9 + FEMALE_9_10 + FEMALE_10_11 + FEMALE_11_12 + FEMALE_12_13 + FEMALE_13_14 + FEMALE_14_15 + FEMALE_15_16 + FEMALE_16_17
     n_05_16 <- nM_05_16 + nF_05_16
     # 0 - 15
@@ -204,7 +206,7 @@ getGPDataset <-
     nF_09_10 <- FEMALE_9_10 + FEMALE_10_11
     n_09_10 <- nM_09_10 + nF_09_10
     # 5 - 7
-    nM_05_07 <-   MALE_5   +   MALE_6   +   MALE_7_8
+    nM_05_07 <-   MALE_5_6 +   MALE_6_7 +   MALE_7_8
     nF_05_07 <- FEMALE_5_6 + FEMALE_6_7 + FEMALE_7_8
     n_05_07 <- nM_05_07 + nF_05_07
     # 16 - 17
@@ -218,7 +220,7 @@ getGPDataset <-
   # trim off unwanted column names (remove MALE_ and FEMALE_ )
 
   GPDataset <- GPDataset[ , -grep("MALE",names(GPDataset)) ]
-  GPDataset <- GPDataset[ , -grep("_95.",names(GPDataset)) ]
+  #GPDataset <- GPDataset[ , -grep("_95.",names(GPDataset)) ] # no longer needed
 
   # exception handling
   #   before adding Code Point coordinates, tweak for missing coordinate in CPO
