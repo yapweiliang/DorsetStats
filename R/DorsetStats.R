@@ -12,7 +12,7 @@
 .default_localities_DataFile <- "h:/DATASETS/Dorset Statistics Derived/CCG 2014/Dorset_GP_Names_and_Localities_from_CCG_PivotTable.csv"
 .default_epraccur_DataFile   <- "h:/DATASETS/HSCIC/epraccur_20150821.csv"
 
-.default_CodePoint_RDSFile   <- "H:/DATASETS/OS/CodePoint/CodePoint 2015.2.0 compiled.rds"
+.default_CodePoint_RDSFile   <- "H:/DATASETS/OS/CodePoint/CodePoint 2015.4.0 compiled.rds"
 
 # GP_SYOA header definitions ----------------------------------------------
 
