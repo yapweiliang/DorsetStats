@@ -8,9 +8,9 @@
 
 # default source data files -----------------------------------------------
 
-.default_GP_SYOA_DataFile    <- "h:/DATASETS/HSCIC/GP_SYOA_20150930.csv"
+.default_GP_SYOA_DataFile    <- "h:/DATASETS/HSCIC/GP_SYOA_20150331.csv"
 .default_localities_DataFile <- "h:/DATASETS/Dorset Statistics Derived/CCG 2014/Dorset_GP_Names_and_Localities_from_CCG_PivotTable.csv"
-.default_epraccur_DataFile   <- "h:/DATASETS/HSCIC/epraccur_20150821.csv"
+.default_epraccur_DataFile   <- "h:/DATASETS/HSCIC/epraccur_20150318.csv"
 
 .default_CodePoint_RDSFile   <- "H:/DATASETS/OS/CodePoint/CodePoint 2015.4.0 compiled.rds"
 
@@ -18,7 +18,7 @@
 
 .GP_SYOA_headers_classes <- c("character", # PRACTICE_CODE
                               "character",  # POSTCODE
-                              rep("factor", 6), # 20150930 has different fields
+                              rep("factor", 3), # 20150930 has different fields, put 6; prior to that put 3
                               rep("integer", (200 - 5))) # SYOA
 
 # localities header definition --------------------------------------------
@@ -69,7 +69,7 @@
                              "CloseDate",
                              "StatusCode",
                              "OrganisationSubTypeCode",
-                             "Commissioner", # "Commissioner"
+                             "Commissioner", # "Commissioner" # or should this be CCG_Code?
                              "JoinProviderPurchaserDate",
                              "LeftProviderPurchaserDate",
                              "ContactTelephoneNumber",
@@ -78,7 +78,7 @@
                              "Null",
                              "AmendedRecordIndicator",
                              "Null",
-                             "ProviderPurchaser", # which is PARENT_ORGANISATIONPCODE
+                             "ProviderPurchaser", # which is PARENT_ORGANISATION_CODE # should this be CCG_Code?
                              "Null",
                              "PrescribingSetting",
                              "Null" )
@@ -169,8 +169,27 @@ getGPDataset <-
 
   # process data
 
-  GPDataset <- merge(epraccur, GP_SYOA)
-  GPDataset <- subset(GPDataset,CCG_CODE %in% CCG_List) # CCG_CODE was PARENT_ORGANISATION_CODE
+  GPDataset <- merge(epraccur, GP_SYOA, all = TRUE)
+  GPDataset <- subset(GPDataset,PARENT_ORGANISATION_CODE %in% CCG_List) # for pre-201508 SYOA data
+  #GPDataset <- subset(GPDataset,CCG_CODE %in% CCG_List) # for for post-201508 SYOA data
+  #GPDataset <- subset(GPDataset,ProviderPurchaser %in% CCG_List) # if referencing epraccur instead
+
+  # check data for missing stuff and check for consistency
+  .missing.SYOA.info <- length(which(is.na(GPDataset$Total_All)))
+  if( .missing.SYOA.info > 0 ) {
+    warning(
+      sprintf("There are %d row(s) with undefined SYOA information.  The GP_SYOA_DataFile might not contain information on every surgery.",
+              .missing.SYOA.info))
+  }
+
+  .missing.epraccur.info <- length(which(is.na(GPDataset$StatusCode)))
+  if( .missing.epraccur.info > 0 ) {
+    warning(
+      sprintf("There are %d row(s) with undefined epraccur information.  This should not happen!",
+              .missing.epraccur.info)
+    )
+  }
+
 
   # work out preferred age bands, and re-define postcode
 
@@ -178,11 +197,11 @@ getGPDataset <-
     # MALE_4, MALE_5, MALE_6 are the odd ones out, this seems to be corrected in the 20150930 gp syoa dataset
 
     # 0 - 4
-    nM_00_04 <-   MALE_0_1 +   MALE_1_2 +   MALE_2_3 +   MALE_3_4 +   MALE_4_5
+    nM_00_04 <-   MALE_0_1 +   MALE_1_2 +   MALE_2_3 +   MALE_3_4 +   MALE_4  ###
     nF_00_04 <- FEMALE_0_1 + FEMALE_1_2 + FEMALE_2_3 + FEMALE_3_4 + FEMALE_4_5
     n_00_04 <- nM_00_04 + nF_00_04
     # 5 - 16
-    nM_05_16 <-   MALE_5_6 +   MALE_6_7 +   MALE_7_8 +   MALE_8_9 +   MALE_9_10 +   MALE_10_11 +   MALE_11_12 +   MALE_12_13 +   MALE_13_14 +   MALE_14_15 +   MALE_15_16 +   MALE_16_17
+    nM_05_16 <-   MALE_5   +   MALE_6   +   MALE_7_8 +   MALE_8_9 +   MALE_9_10 +   MALE_10_11 +   MALE_11_12 +   MALE_12_13 +   MALE_13_14 +   MALE_14_15 +   MALE_15_16 +   MALE_16_17  ###
     nF_05_16 <- FEMALE_5_6 + FEMALE_6_7 + FEMALE_7_8 + FEMALE_8_9 + FEMALE_9_10 + FEMALE_10_11 + FEMALE_11_12 + FEMALE_12_13 + FEMALE_13_14 + FEMALE_14_15 + FEMALE_15_16 + FEMALE_16_17
     n_05_16 <- nM_05_16 + nF_05_16
     # 0 - 15
@@ -206,7 +225,7 @@ getGPDataset <-
     nF_09_10 <- FEMALE_9_10 + FEMALE_10_11
     n_09_10 <- nM_09_10 + nF_09_10
     # 5 - 7
-    nM_05_07 <-   MALE_5_6 +   MALE_6_7 +   MALE_7_8
+    nM_05_07 <-   MALE_5   +   MALE_6   +   MALE_7_8  ###
     nF_05_07 <- FEMALE_5_6 + FEMALE_6_7 + FEMALE_7_8
     n_05_07 <- nM_05_07 + nF_05_07
     # 16 - 17
@@ -272,7 +291,23 @@ getDorsetGPDataset <- function( GP_SYOA_DataFile = .default_GP_SYOA_DataFile,
 
   message("Merging Dorset CCG localities")
 
-  DorsetGPDataset <- merge(DorsetLocalities, DorsetGPDataset, by.x = "GP_Practice_Code", by.y = "PRACTICE_CODE")
+  DorsetGPDataset <- merge(DorsetLocalities, DorsetGPDataset, by.x = "GP_Practice_Code", by.y = "PRACTICE_CODE", all = TRUE)
+
+  # check that the localities data file contains all the surgeries
+  .missing.locality.info <- length(which(is.na(DorsetGPDataset$Locality)))
+  if( .missing.locality.info > 0 ) {
+    warning(
+      sprintf("There are %d row(s) with undefined Dorset locality.  This probably means the specified localities_Datafile is not up to date.",
+              .missing.locality.info))
+  }
+
+  # check that we have all that the localities data file says we should
+  .missing.GP.info <- length(which(is.na(DorsetGPDataset$NAME)))
+  if( .missing.GP.info > 0 ) {
+    warning(
+      sprintf("There are %d row(s) with undefined GP surgery.  This probably means the GP_SYOA_Datafile is missing some information.  Also check the epraccur_Datafile.",
+              .missing.GP.info ))
+  }
 
   # refactor everything
   cat <- sapply(DorsetGPDataset, is.factor)
