@@ -1,18 +1,32 @@
 # DorsetStats.R
-
-# sources -----------------------------------------------------------------
-
-# epraccur  http://systems.hscic.gov.uk/data/ods/datadownloads/gppractice/index_html
-# gp_syoa   http://www.hscic.gov.uk/article/2021/Website-Search?q=gp+list+size&go=Go&area=both
-# localities from CCG Pivot Table
+#' Dorset Statistics
+#'
+#' get Dorset GP Surgery statistics from hscic and NHSPD.
+#' also exports a number of constants of CCG codes
+#'
+#' @section Sources:
+#' \describe{
+#'  \item{epraccur}{\url{http://systems.hscic.gov.uk/data/ods/datadownloads/gppractice/index_html}}
+#'  \item{gp_syoa}{\url{http://www.hscic.gov.uk/article/2021/Website-Search?q=gp+list+size&go=Go&area=both}}
+#'  \item{localities}{from CCG Pivot Table}
+#' }
+#'
+#' @section TODO:
+#' TODO see if significant benefits using data.table?
+#'
+#' TODO new col names for the more recent SYOA, etc
+#'
+#' TODO now that we use NHSPD instead of codepoint, could optimise use of PCD7/PCD8
+#'
+#' @docType package
+#' @name DorsetStats
+NULL
 
 # default source data files -----------------------------------------------
 
 .default_GP_SYOA_DataFile    <- "h:/DATASETS/HSCIC/GP_SYOA_20150331.csv"
 .default_localities_DataFile <- "h:/DATASETS/Dorset Statistics Derived/CCG 2014/Dorset_GP_Names_and_Localities_from_CCG_PivotTable.csv"
 .default_epraccur_DataFile   <- "h:/DATASETS/HSCIC/epraccur_20150318.csv"
-
-.default_CodePoint_RDSFile   <- "H:/DATASETS/OS/CodePoint/CodePoint 2015.4.0 compiled.rds"
 
 # GP_SYOA header definitions ----------------------------------------------
 
@@ -111,7 +125,8 @@
                                "factor",  # "PrescribingSetting",
                                "NULL" )
 
-# constants
+# exported constants ------------------------------------------------------
+#' @exportPattern CCGcode[s]?.\\w+
 
 CCGcode.Dorset <- '11J'
 CCGcode.BathAndNorthEastSomerset <- '11E'
@@ -153,11 +168,31 @@ CCGcodes.DorsetAndSurroundings <- c(
 
 # function: getGPDataset --------------------------------------------------
 
+#' get GP Dataset
+#'
+#' Links up data from \emph{epraccur} (list of GP surgeries) and
+#' \emph{gp_syoa} (registered patients by single year of age) and
+#' optionally (for Dorset) specify which \emph{locality} they are in.
+#' Then, links up with \pkg{NHSPD} \emph{(NHS Postcode Directory)} to obtain LSOA and other data
+#'
+#' @param GP_SYOA_DataFile full path to the \file{GP_SYOA.csv} file, download from \url{http://www.hscic.gov.uk}
+#' @param CCG_List character vector of CCG codes, e.g. \code{c("11J")}
+#' @param epraccur_DataFile full path to the \file{epraccur.csv} file, download and unzip from \url{http://systems.hscic.gov.uk/data/ods/datadownloads/gppractice/index_html}
+#' @param CodePoint OBSOLETE, REMOVED. specify the Code Point dataset, or load it from a saved \file{codepoint.rds} file
+#' @param localities_DataFile full path to the file obtained from CCG, or scrape from \url{http://www.dorsetccg.nhs.uk/aboutus/localities.htm}
+#'
+#' @return return this
+#' @export
+#'
+#' @examples DorsetGPDataset <- getDorsetGPDataset()
 getGPDataset <-
   function(GP_SYOA_DataFile = .default_GP_SYOA_DataFile,
            CCG_List = CCGcodes.DorsetsSurroundings,
-           epraccur_DataFile = .default_epraccur_DataFile,
-           CodePoint = readRDS(.default_CodePoint_RDSFile)) {
+           epraccur_DataFile = .default_epraccur_DataFile) {
+
+  # load NHSPD data
+
+  NHSPD <- getNHSPD()
 
   # load csv data
 
@@ -234,6 +269,7 @@ getGPDataset <-
     n_16_17 <- nM_16_17 + nF_16_17
 
     POSTCODE<-paste0(str_sub(POSTCODE,1,4),str_sub(POSTCODE,-3,-1)) # make it the same format as CodePoint database
+    # TODO - now that we use NHSPD which has PCD8 (and PCD7 added by me), maybe can stick with PCD8?
   })
 
   # trim off unwanted column names (remove MALE_ and FEMALE_ )
@@ -246,7 +282,7 @@ getGPDataset <-
   #     BH229HF is not on Code Point Open
   #     however it is adjacent to BH229HB, so use same coordinates
 
-  if (is.na(match("BH229HF", CodePoint$Postcode))) {
+  if (is.na(match("BH229HF", NHSPD$Postcode))) {
     z <- which(GPDataset$POSTCODE == "BH229HF")
     if (length(z) > 0) {
       GPDataset[z, ]$POSTCODE <- "BH229HB"
@@ -258,11 +294,11 @@ getGPDataset <-
 
   # add Code Point coordinates
 
-  GPDataset <- merge(GPDataset,CodePoint,by.x="POSTCODE",by.y="Postcode",all.x=TRUE)
+  GPDataset <- merge(GPDataset,NHSPD,by.x="POSTCODE",by.y="Postcode",all.x=TRUE)
 
-  .missing.codepoint.coordinates <- length(which(is.na(GPDataset$Eastings)))
-  if( .missing.codepoint.coordinates > 0 ) {
-    warning( sprintf("There are %d row(s) with missing Code Point coordinates.",.missing.codepoint.coordinates))
+  .missing.NHSPD.coordinates <- length(which(is.na(GPDataset$Eastings)))
+  if( .missing.NHSPD.coordinates > 0 ) {
+    warning( sprintf("There are %d row(s) with missing NHSPD/codepoint coordinates.",.missing.NHSPD.coordinates))
   }
 
   # refactor everything
@@ -274,10 +310,11 @@ getGPDataset <-
 
 # function: getDorsetGPDataset --------------------------------------------
 
+#' @describeIn getGPDataset wrapper function to obtain Dorset GP information and add localities
+#' @export
 getDorsetGPDataset <- function( GP_SYOA_DataFile = .default_GP_SYOA_DataFile,
                                 localities_DataFile = .default_localities_DataFile,
-                                epraccur_DataFile = .default_epraccur_DataFile,
-                                CodePoint = readRDS(.default_CodePoint_RDSFile) ) {
+                                epraccur_DataFile = .default_epraccur_DataFile) {
 
   message(sprintf("Loading NHS Dorset localities file: %s", localities_DataFile))
   DorsetLocalities <- read.csv(localities_DataFile, colClasses = .localities_headers_classes)
@@ -285,8 +322,7 @@ getDorsetGPDataset <- function( GP_SYOA_DataFile = .default_GP_SYOA_DataFile,
   DorsetGPDataset <- getGPDataset(
     GP_SYOA_DataFile = GP_SYOA_DataFile,
     CCG_List = CCGcode.Dorset,
-    epraccur_DataFile = epraccur_DataFile,
-    CodePoint = CodePoint
+    epraccur_DataFile = epraccur_DataFile
   )
 
   message("Merging Dorset CCG localities")
