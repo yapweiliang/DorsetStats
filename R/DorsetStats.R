@@ -126,7 +126,7 @@ NULL
                                "NULL" )
 
 # exported constants ------------------------------------------------------
-#' @exportPattern CCGcode[s]?.\\w+
+#' @exportPattern CCGcode[s]?.\w+
 
 CCGcode.Dorset <- '11J'
 CCGcode.BathAndNorthEastSomerset <- '11E'
