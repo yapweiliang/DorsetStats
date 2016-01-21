@@ -18,6 +18,8 @@
 #'
 #' TODO now that we use NHSPD instead of codepoint, could optimise use of PCD7/PCD8
 #'
+#' TODO eventually remove codepoint option just leave NHSPD
+#'
 #' @docType package
 #' @name DorsetStats
 NULL
@@ -188,11 +190,9 @@ CCGcodes.DorsetAndSurroundings <- c(
 getGPDataset <-
   function(GP_SYOA_DataFile = .default_GP_SYOA_DataFile,
            CCG_List = CCGcodes.DorsetsSurroundings,
+           CodePoint = getNHSPD(),
+           NHSPD = CodePoint,
            epraccur_DataFile = .default_epraccur_DataFile) {
-
-  # load NHSPD data
-
-  NHSPD <- getNHSPD()
 
   # load csv data
 
@@ -314,6 +314,8 @@ getGPDataset <-
 #' @export
 getDorsetGPDataset <- function( GP_SYOA_DataFile = .default_GP_SYOA_DataFile,
                                 localities_DataFile = .default_localities_DataFile,
+                                CodePoint = getNHSPD(),
+                                NHSPD = CodePoint,
                                 epraccur_DataFile = .default_epraccur_DataFile) {
 
   message(sprintf("Loading NHS Dorset localities file: %s", localities_DataFile))
