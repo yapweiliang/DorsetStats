@@ -204,10 +204,10 @@ getGPDataset <-
 
   # process data
 
-  GPDataset <- merge(epraccur, GP_SYOA, all = TRUE)
+  GPDataset <- merge(epraccur, GP_SYOA, all = TRUE, by = "PRACTICE_CODE", suffixes = c("", ".GP_SYOA"))
   GPDataset <- subset(GPDataset,PARENT_ORGANISATION_CODE %in% CCG_List) # for pre-201508 SYOA data
   #GPDataset <- subset(GPDataset,CCG_CODE %in% CCG_List) # for for post-201508 SYOA data
-  #GPDataset <- subset(GPDataset,ProviderPurchaser %in% CCG_List) # if referencing epraccur instead
+  #GPDataset <- subset(GPDataset,Commisioner %in% CCG_List) # if referencing epraccur instead
 
   # check data for missing stuff and check for consistency
   .missing.SYOA.info <- length(which(is.na(GPDataset$Total_All)))
