@@ -274,6 +274,8 @@ getGPDataset <-
       FEMALE_33_34 + FEMALE_34_35 + FEMALE_35_36 + FEMALE_36_37 + FEMALE_37_38 + FEMALE_38_39 + FEMALE_39_40 + FEMALE_40_41 + FEMALE_41_42 +
       FEMALE_42_43 + FEMALE_43_44 + FEMALE_44_45 + FEMALE_45_46 + FEMALE_46_47 + FEMALE_47_48 + FEMALE_48_49 + FEMALE_49_50
 
+    n_00_01 <- MALE_00_01 + FEMALE_00_01
+
     POSTCODE<-paste0(str_sub(POSTCODE,1,4),str_sub(POSTCODE,-3,-1)) # make it the same format as CodePoint database
     # TODO - now that we use NHSPD which has PCD8 (and PCD7 added by me), maybe can stick with PCD8?
   })
