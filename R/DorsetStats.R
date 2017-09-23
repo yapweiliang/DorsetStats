@@ -4,23 +4,39 @@
 #' get Dorset GP Surgery statistics from hscic and NHSPD.
 #' also exports a number of constants of CCG codes
 #'
+#'
 #' @section Sources:
 #' \describe{
 #'  \item{epraccur (previously)}{\url{http://systems.hscic.gov.uk/data/ods/datadownloads/gppractice/index_html}}
 #'  \item{epraccur}{\url{https://digital.nhs.uk/organisation-data-service/data-downloads/gp-data}}
 #'  \item{gp_syoa (previously)}{\url{http://www.hscic.gov.uk/article/2021/Website-Search?q=gp+list+size&go=Go&area=both}}
-#'  \item(gp_syoa}{\url{http://www.content.digital.nhs.uk/catalogue/PUB23978}})
+#'  \item{gp_syoa}{\url{http://www.content.digital.nhs.uk/catalogue/PUB23978}})
 #'  \item{localities}{from CCG Pivot Table}
 #' }
+#'
+#' @section History/Discussion
+#'
+#' previous generic getGPDataset now hidden.
+#'
+#' in 2017 there are 94 GP surgeries in Dorset.  However DCH does not appear to have updated themselves
+#' such that there are still references to non-existant or merged surgeries (e.g. J81026) therefore reverting
+#' back to the 2015 dataset for now
+#'
+#' NHS Digital (previously HSCIC) appear to have changed SYOA data from wide to long format, and separated male + female.
+#' Code has been rewritten to accomodate this.  Appears to work, but needs further in depth testing.
 #'
 #' @section TODO:
 #' TODO see if significant benefits using data.table?
 #'
-#' DONE TODO new col names for the more recent SYOA, etc
-#'
 #' TODO now that we use NHSPD instead of codepoint, could optimise use of PCD7/PCD8
 #'
 #' TODO eventually remove codepoint option just leave NHSPD
+#'
+#' TODO NHS digital appears to have changed SYOA data from wide to long format.  Need to test, document, and tidy.
+#'
+#' @section DONE:
+#'
+#' DONE new col names for the more recent SYOA, etc
 #'
 #' @docType package
 #' @name DorsetStats
@@ -28,21 +44,19 @@ NULL
 
 # default source data files -----------------------------------------------
 
-.use2015 <- FALSE
+.use2015 <- TRUE # use March 2015 data (CSR2015 analysis)?
 
 if(.use2015) {
   # March 2015 data, keep for CSR2015 analysis
   .default_GP_SYOA_DataFile    <- "h:/DATASETS/HSCIC/gpsyoa/keep/GP_SYOA_20150331.csv"
   .default_localities_DataFile <- "h:/DATASETS/Dorset Statistics Derived/CCG 2014/Dorset_GP_Names_and_Localities_from_CCG_PivotTable.csv"
   .default_epraccur_DataFile   <- "h:/DATASETS/HSCIC/epraccur/keep/epraccur_20150318.csv"
-  .use_old_SYOA_headers <- TRUE
 } else {
   # newer data
   .default_GP_SYOA_male_DataFile   <- "h:/DATASETS/HSCIC/gpsyoa/gp-reg-pat-prac-sing-age-male.csv"
   .default_GP_SYOA_female_DataFile <- "h:/DATASETS/HSCIC/gpsyoa/gp-reg-pat-prac-sing-age-female.csv"
   .default_localities_DataFile     <- "h:/DATASETS/Dorset Statistics Derived/CCG 2014/Dorset_GP_Names_and_Localities_from_CCG_PivotTable.csv"
   .default_epraccur_DataFile       <- "h:/DATASETS/HSCIC/epraccur/epraccur_20170522.csv"
-  .use_old_SYOA_headers <- FALSE
 }
 
 # GP_SYOA header definitions ----------------------------------------------
@@ -193,38 +207,43 @@ CCGcodes.DorsetAndSurroundings <- c(
   CCGcodes.DorsetsSurroundings
 )
 
+# function: .getGPDataset --------------------------------------------
 
 
-#' Title
+#' get GP Dataset (current)
 #'
-#' @param GP_SYOA_male_DataFile
-#' @param GP_SYOA_female_DataFile
-#' @param CCG_List
-#' @param CodePoint
-#' @param NHSPD
+#' Links up data from \emph{epraccur} (list of GP surgeries) and
+#' \emph{gp_syoa} (registered patients by single year of age) and
+#' optionally (for Dorset) specify which \emph{locality} they are in.
+#' Then, links up with \pkg{NHSPD} \emph{(NHS Postcode Directory)} to obtain LSOA and other data
+#'
+#' @param GP_SYOA_male_DataFile full path to the SYOA \file{gp-reg-pat-prac-sing-age-male.csv}
+#' @param GP_SYOA_female_DataFile download from NHS digital
+#' @param CCG_List character vector of CCG codes, e.g. \code{c("11J")}
+#' @param CodePoint OBSOLETE, REMOVED. specify the Code Point dataset, or load it from a saved \file{codepoint.rds} file
+#' @param NHSPD specify the NHSPD dataset (was CodePoint) or use NHSPD::getNHSPD
 #' @param epraccur_DataFile
-#' @param use_old_SYOA_headers
 #'
-#' @return
-#' @export
+#' @return return this
+#' #@export
 #'
-#' @examples
+#' @examples DorsetGPDataset <- getDorsetGPDataset()
 .getGPDataset <-
   function(GP_SYOA_male_DataFile = .default_GP_SYOA_male_DataFile,
            GP_SYOA_female_DataFile = .default_GP_SYOA_female_DataFile,
            CCG_List = CCGcodes.DorsetsSurroundings,
-           CodePoint = NHSPD::getNHSPD(),
+           #CodePoint = NHSPD::getNHSPD(),
            NHSPD = NHSPD::getNHSPD(),
            epraccur_DataFile = .default_epraccur_DataFile) {
 
 
-    # temp
-    GP_SYOA_male_DataFile = .default_GP_SYOA_male_DataFile
-    GP_SYOA_female_DataFile = .default_GP_SYOA_female_DataFile
-    CCG_List = CCGcodes.DorsetsSurroundings
-    CodePoint = NHSPD::getNHSPD()
-    NHSPD = NHSPD::getNHSPD()
-    epraccur_DataFile = .default_epraccur_DataFile
+    # # temp
+    # GP_SYOA_male_DataFile = .default_GP_SYOA_male_DataFile
+    # GP_SYOA_female_DataFile = .default_GP_SYOA_female_DataFile
+    # CCG_List = CCGcodes.DorsetsSurroundings
+    # #CodePoint = NHSPD::getNHSPD()
+    # NHSPD = NHSPD::getNHSPD()
+    # epraccur_DataFile = .default_epraccur_DataFile
 
     # load epraccur data
     message(sprintf("Loading epraccur file: %s", epraccur_DataFile))
@@ -368,7 +387,7 @@ CCGcodes.DorsetAndSurroundings <- c(
 
 # function: .old.getGPDataset --------------------------------------------------
 
-#' get GP Dataset
+#' get GP Dataset (old)
 #'
 #' Links up data from \emph{epraccur} (list of GP surgeries) and
 #' \emph{gp_syoa} (registered patients by single year of age) and
@@ -384,7 +403,7 @@ CCGcodes.DorsetAndSurroundings <- c(
 #' @param use_old_SYOA_headers \code{FALSE} Since 20150930, three of the column names have changed, and become six columns
 #'
 #' @return return this
-#' @export
+#' #@export
 #'
 #' @examples DorsetGPDataset <- getDorsetGPDataset()
 .old.getGPDataset <-
@@ -522,22 +541,23 @@ CCGcodes.DorsetAndSurroundings <- c(
   return(GPDataset)
 }
 
+
+
+
 # function: getDorsetGPDataset --------------------------------------------
 
 #' @describeIn getGPDataset wrapper function to obtain Dorset GP information and add localities
 #' @export
 getDorsetGPDataset <- function( localities_DataFile = .default_localities_DataFile,
-                                CodePoint = NHSPD::getNHSPD(),
-                                NHSPD = NHSPD::getNHSPD(),
-                                use_old_SYOA_headers = .default_use_old_SYOA_headers) {
+                                use2015 = .use2015) {
 
   message(sprintf("Loading NHS Dorset localities file: %s", localities_DataFile))
   DorsetLocalities <- read.csv(localities_DataFile, colClasses = .localities_headers_classes)
 
-  if(use_old_SYOA_headers) {
+  if(use2015) {
     DorsetGPDataset <- .old.getGPDataset(
       CCG_List = CCGcode.Dorset,
-      use_old_SYOA_headers = use_old_SYOA_headers
+      #use_old_SYOA_headers = use_old_SYOA_headers
     )
   } else {
     DorsetGPDataset <- .getGPDataset(
@@ -553,7 +573,9 @@ getDorsetGPDataset <- function( localities_DataFile = .default_localities_DataFi
   .missing.locality.info <- length(which(is.na(DorsetGPDataset$Locality)))
   if( .missing.locality.info > 0 ) {
     warning(
-      sprintf("There are %d row(s) with undefined Dorset locality.  This probably means the specified localities_Datafile is not up to date.",
+      sprintf(paste("There are %d row(s) with undefined Dorset locality.  ",
+                    "This probably means the specified localities_Datafile is not up to date ",
+                    "(i.e. there are new GP surgery codes).", sep = ""),
               .missing.locality.info))
   }
 
@@ -561,7 +583,11 @@ getDorsetGPDataset <- function( localities_DataFile = .default_localities_DataFi
   .missing.GP.info <- length(which(is.na(DorsetGPDataset$NAME)))
   if( .missing.GP.info > 0 ) {
     warning(
-      sprintf("There are %d row(s) with undefined GP surgery.  This probably means the GP_SYOA_Datafile is missing some information.  Also check the epraccur_Datafile.",
+      sprintf(paste("There are %d row(s) with undefined GP surgery.  ",
+                    "This probably means the GP_SYOA_Datafile is missing some information.  ",
+                    "Also check the epraccur_Datafile.",
+                    "\nAlternatively the specificed localities_Datafile is not up to date ",
+                    "(i.e. one or more GP surgeries have closed - therefore please consider trimming the unneeded rows).", sep = ""),
               .missing.GP.info ))
   }
 
@@ -571,4 +597,3 @@ getDorsetGPDataset <- function( localities_DataFile = .default_localities_DataFi
 
   return(DorsetGPDataset)
 }
-

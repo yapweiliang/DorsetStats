@@ -1,7 +1,7 @@
 Package: DorsetStats
 Type: Package
 Title: process Dorset statistics in a manner that I want
-Version: 1.1
+Version: 1.2
 Date: 2015-05-15
 Author: Wei Liang Yap
 Maintainer: Wei Liang Yap <yapweiliang@yahoo.co.uk>
@@ -9,5 +9,6 @@ Description: Dorset GP Surgery statistics from hscic and NHSPD.
 License: GPL(>=2)
 Depends:
     stringr,
+    tidyr,
     NHSPD
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
